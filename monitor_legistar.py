@@ -169,8 +169,7 @@ def push_to_notion(item):
                 "multi_select": [{"name": k} for k in item["keyword_groups"]]
             },
             "Status": {
-                "select": {
-                    "name": item["status"]}
+                "select": {"name": item["status"]}
             },
             "Legistar URL": {
                 "url": item["url"]
@@ -180,22 +179,23 @@ def push_to_notion(item):
             }
         }
     }
-print("SENDING TO NOTION:", flush=True)
-for k, v in payload["properties"].items():
-    print(" -", k, ":", v, flush=True)
 
-r = requests.post(
-    NOTION_API, headers=headers, json=payload)
-r = requests.post(
-    NOTION_API,
-    headers=headers,
-    json=payload
-)
+    # DEBUG OUTPUT (now correctly scoped)
+    print("SENDING TO NOTION:", flush=True)
+    for k, v in payload["properties"].items():
+        print(" -", k, ":", v, flush=True)
 
-if not r.ok:
-    print("❌ NOTION ERROR STATUS:", r.status_code, flush=True)
-    print("❌ NOTION ERROR BODY:", r.text, flush=True)
-    raise RuntimeError("Notion API rejected the payload")
+    r = requests.post(
+        NOTION_API,
+        headers=headers,
+        json=payload
+    )
+
+    if not r.ok:
+        print("❌ NOTION ERROR STATUS:", r.status_code, flush=True)
+        print("❌ NOTION ERROR BODY:", r.text, flush=True)
+        raise RuntimeError("Notion API rejected the payload")
+
 
 # -------------------------------------------------
 # MAIN
