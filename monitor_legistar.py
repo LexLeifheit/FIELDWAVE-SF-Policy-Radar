@@ -182,7 +182,16 @@ for k, v in payload["properties"].items():
     print(" -", k, ":", v)
 
 r = requests.post(NOTION_API, headers=headers, json=payload)
-r.raise_for_status()
+r = requests.post(
+    NOTION_API,
+    headers=headers,
+    json=payload
+)
+
+if not r.ok:
+    print("❌ NOTION ERROR STATUS:", r.status_code, flush=True)
+    print("❌ NOTION ERROR BODY:", r.text, flush=True)
+    raise RuntimeError("Notion API rejected the payload")
 
 # -------------------------------------------------
 # MAIN
