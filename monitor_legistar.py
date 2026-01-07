@@ -159,15 +159,18 @@ def push_to_notion(item):
                 "rich_text": [{"text": {"content": item["department"]}}]
             },
             "Committees": {
-                "multi_select": [{"name": c} for c in item["committees"]]
+                "multi_select": [
+                    {"name": c.strip()}
+                    for c in item["committees"]
+                    if c and c.strip()
+                ]
             },
             "Keyword Groups": {
                 "multi_select": [{"name": k} for k in item["keyword_groups"]]
             },
             "Status": {
                 "select": {
-                    "name": item["status"]
-                }
+                    "name": item["status"]}
             },
             "Legistar URL": {
                 "url": item["url"]
@@ -177,11 +180,12 @@ def push_to_notion(item):
             }
         }
     }
-print("SENDING TO NOTION:")
+print("SENDING TO NOTION:", flush=True)
 for k, v in payload["properties"].items():
-    print(" -", k, ":", v)
+    print(" -", k, ":", v, flush=True)
 
-r = requests.post(NOTION_API, headers=headers, json=payload)
+r = requests.post(
+    NOTION_API, headers=headers, json=payload)
 r = requests.post(
     NOTION_API,
     headers=headers,
