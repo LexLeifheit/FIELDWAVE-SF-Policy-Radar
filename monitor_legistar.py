@@ -137,6 +137,11 @@ def push_to_notion(item):
             "Keyword Groups": {
                 "multi_select": [{"name": k} for k in item["keyword_groups"]]
             },
+            "Status": {
+                "select": {
+                    "name": item["status"]
+                }
+            },
             "Legistar URL": {
                 "url": item["url"]
             },
@@ -179,16 +184,19 @@ def run_monitor():
 
         priority = assign_priority(keyword_hits, dept_hit, committee_hit)
 
+        status = m.get("MatterStatusName", "Pending")
+
         item = {
-            "matter_id": m["MatterId"],
-            "title": m.get("MatterName", "Untitled"),
-            "priority": priority,
-            "department": m.get("Department", ""),
-            "committees": committees,
-            "keyword_groups": list(keyword_hits.keys()),
-            "url": f"https://sfgov.legistar.com/LegislationDetail.aspx?ID={m['MatterId']}",
-            "date_checked": datetime.utcnow().isoformat()
-        }
+    "matter_id": m["MatterId"],
+    "title": m.get("MatterName", "Untitled"),
+    "priority": priority,
+    "department": m.get("Department", ""),
+    "committees": committees,
+    "keyword_groups": list(keyword_hits.keys()),
+    "status": status,
+    "url": f"https://sfgov.legistar.com/LegislationDetail.aspx?ID={m['MatterId']}",
+    "date_checked": datetime.utcnow().isoformat()
+}
 
         push_to_notion(item)
 
