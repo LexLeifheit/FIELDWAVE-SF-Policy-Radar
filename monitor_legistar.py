@@ -59,6 +59,33 @@ ESCALATION_COMMITTEES = [
     "government audit and oversight",
     "rules committee"
 ]
+KNOWN_STATUSES = [
+    "30 Day Rule",
+    "Completed",
+    "Consent Agenda",
+    "Disapproved",
+    "Discussed and Filed",
+    "Failed",
+    "Filed",
+    "First Reading",
+    "First Reading, Consent",
+    "For Immediate Adoption",
+    "Heard",
+    "Introduced",
+    "Killed",
+    "Litigation-Attorney",
+    "Mayors Office",
+    "New Business",
+    "Passed",
+    "Pending",
+    "Pending Committee Action",
+    "Special Order",
+    "To be Scheduled for Public Hearing",
+    "Unfinished Business",
+    "Unfinished Business-Final Passage",
+    "Vetoed",
+    "Withdrawn"
+]
 
 # -------------------------------------------------
 # HELPERS
@@ -185,7 +212,8 @@ def run_monitor():
         priority = assign_priority(keyword_hits, dept_hit, committee_hit)
 
         status = m.get("MatterStatusName", "Pending")
-
+        if status not in KNOWN_STATUSES:
+            status = "Pending"
         item = {
     "matter_id": m["MatterId"],
     "title": m.get("MatterName", "Untitled"),
