@@ -177,9 +177,12 @@ def push_to_notion(item):
             }
         }
     }
+print("SENDING TO NOTION:")
+for k, v in payload["properties"].items():
+    print(" -", k, ":", v)
 
-    r = requests.post(NOTION_API, headers=headers, json=payload)
-    r.raise_for_status()
+r = requests.post(NOTION_API, headers=headers, json=payload)
+r.raise_for_status()
 
 # -------------------------------------------------
 # MAIN
