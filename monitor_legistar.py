@@ -59,7 +59,7 @@ ESCALATION_COMMITTEES = [
     "government audit and oversight",
     "rules committee"
 ]
-KNOWN_STATUSES = [
+KNOWN_STATUSES = {
     "30 Day Rule",
     "Completed",
     "Consent Agenda",
@@ -85,7 +85,7 @@ KNOWN_STATUSES = [
     "Unfinished Business-Final Passage",
     "Vetoed",
     "Withdrawn"
-]
+}
 
 # -------------------------------------------------
 # HELPERS
