@@ -143,41 +143,75 @@ def push_to_notion(item):
         "Notion-Version": "2022-06-28"
     }
 
+    # Base properties (always safe)
+    properties = {
+        "Title": {
+            "title": [{"text": {"content": item["title"]}}]
+        },
+        "Matter ID": {
+            "number": item["matter_id"]
+        },
+        "File Number": {
+            "rich_text": [{"text": {"content": item["file_number"]}}]
+        },
+        "Priority": {
+            "select": {"name": item["priority"]}
+        },
+        "Department": {
+            "rich_text": [{"text": {"content": item["department"]}}]
+        },
+        "In Control": {
+            "rich_text": [{"text": {"content": item["in_control"]}}]
+        },
+        "Action": {
+            "rich_text": [{"text": {"content": item["action"]}}]
+        },
+        "Primary Sponsor": {
+            "rich_text": [{"text": {"content": item["primary_sponsor"]}}]
+        },
+        "Secondary Sponsors": {
+            "multi_select": [{"name": s} for s in item["secondary_sponsors"]]
+        },
+        "Committees": {
+            "multi_select": [
+                {"name": c.strip()}
+                for c in item["committees"]
+                if c and c.strip()
+            ]
+        },
+        "Keyword Groups": {
+            "multi_select": [{"name": k} for k in item["keyword_groups"]]
+        },
+        "Status": {
+            "select": {"name": item["status"]}
+        },
+        "Legistar URL": {
+            "url": item["url"]
+        },
+        "Date Checked": {
+            "date": {"start": item["date_checked"]}
+        }
+    }
+
+    # Guarded fields (avoid Notion 400s)
+    if item["type"]:
+        properties["Type of Legislation"] = {
+            "select": {"name": item["type"]}
+        }
+
+    if item["action_date"]:
+        properties["Action Date"] = {
+            "date": {"start": item["action_date"]}
+        }
+
+    if item["final_action_date"]:
+        properties["Final Action"] = {
+            "date": {"start": item["final_action_date"]}
+        }
+
     payload = {
         "parent": {"database_id": NOTION_DATABASE_ID},
-        "properties": {
-            "Title": {
-                "title": [{"text": {"content": item["title"]}}]
-            },
-            "Matter ID": {
-                "number": item["matter_id"]
-            },
-            "Priority": {
-                "select": {"name": item["priority"]}
-            },
-            "Department": {
-                "rich_text": [{"text": {"content": item["department"]}}]
-            },
-            "Committees": {
-                "multi_select": [
-                    {"name": c.strip()}
-                    for c in item["committees"]
-                    if c and c.strip()
-                ]
-            },
-            "Keyword Groups": {
-                "multi_select": [{"name": k} for k in item["keyword_groups"]]
-            },
-            "Status": {
-                "select": {"name": item["status"]}
-            },
-            "Legistar URL": {
-                "url": item["url"]
-            },
-            "Date Checked": {
-                "date": {"start": item["date_checked"]}
-            }
-        }
+        "properties": properties
     }
 
     r = requests.post(
@@ -187,9 +221,9 @@ def push_to_notion(item):
     )
 
     if not r.ok:
-        raise RuntimeError(
-            f"Notion API error {r.status_code}: {r.text}"
-        )
+        raise RuntimeError(f"Notion API error {r.status_code}: {r.text}")
+
+
 
 
 # -------------------------------------------------
@@ -225,11 +259,19 @@ def run_monitor():
         status = m.get("MatterStatusName", "Pending")
         if status not in KNOWN_STATUSES:
             status = "Pending"
-        item = {
+       item = {
     "matter_id": m["MatterId"],
+    "file_number": m.get("MatterFile", ""),
     "title": m.get("MatterName", "Untitled"),
+    "type": m.get("MatterTypeName", ""),
     "priority": priority,
     "department": m.get("Department", ""),
+    "in_control": m.get("MatterInControlName", ""),
+    "action": m.get("MatterFinalActionName", ""),
+    "action_date": m.get("MatterFinalActionDate", ""),
+    "final_action_date": m.get("MatterPassedDate", ""),
+    "primary_sponsor": primary_sponsor or "",
+    "secondary_sponsors": secondary_sponsors,
     "committees": committees,
     "keyword_groups": list(keyword_hits.keys()),
     "status": status,
