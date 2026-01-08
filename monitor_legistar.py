@@ -102,6 +102,32 @@ def fetch_history(matter_id):
         return []
     return r.json()
 
+def fetch_sponsors(matter_id):
+    """
+    Returns (primary_sponsor, secondary_sponsors[])
+    """
+    r = requests.get(f"{LEGISTAR_BASE}/matters/{matter_id}/sponsors")
+    if r.status_code != 200:
+        return None, []
+
+    sponsors = r.json()
+    primary = None
+    secondary = []
+
+    for s in sponsors:
+        name = s.get("MatterSponsorName")
+        seq = s.get("MatterSponsorSequence")
+
+        if not name:
+            continue
+
+        if seq == 1:
+            primary = name
+        elif seq and seq > 1:
+            secondary.append(name)
+
+    return primary, secondary
+
 def match_keywords(text):
     text = text.lower()
     hits = {}
