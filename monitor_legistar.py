@@ -259,27 +259,31 @@ def run_monitor():
         status = m.get("MatterStatusName", "Pending")
         if status not in KNOWN_STATUSES:
             status = "Pending"
-       item = {
-    "matter_id": m["MatterId"],
-    "file_number": m.get("MatterFile", ""),
-    "title": m.get("MatterName", "Untitled"),
-    "type": m.get("MatterTypeName", ""),
-    "priority": priority,
-    "department": m.get("Department", ""),
-    "in_control": m.get("MatterInControlName", ""),
-    "action": m.get("MatterFinalActionName", ""),
-    "action_date": m.get("MatterFinalActionDate", ""),
-    "final_action_date": m.get("MatterPassedDate", ""),
-    "primary_sponsor": primary_sponsor or "",
-    "secondary_sponsors": secondary_sponsors,
-    "committees": committees,
-    "keyword_groups": list(keyword_hits.keys()),
-    "status": status,
-    "url": f"https://sfgov.legistar.com/LegislationDetail.aspx?ID={m['MatterId']}",
-    "date_checked": datetime.utcnow().isoformat()
-}
+
+        primary_sponsor, secondary_sponsors = fetch_sponsors(m["MatterId"])
+
+        item = {
+            "matter_id": m["MatterId"],
+            "file_number": m.get("MatterFile", ""),
+            "title": m.get("MatterName", "Untitled"),
+            "type": m.get("MatterTypeName", ""),
+            "priority": priority,
+            "department": m.get("Department", ""),
+            "in_control": m.get("MatterInControlName", ""),
+            "action": m.get("MatterFinalActionName", ""),
+            "action_date": m.get("MatterFinalActionDate", ""),
+            "final_action_date": m.get("MatterPassedDate", ""),
+            "primary_sponsor": primary_sponsor or "",
+            "secondary_sponsors": secondary_sponsors,
+            "committees": committees,
+            "keyword_groups": list(keyword_hits.keys()),
+            "status": status,
+            "url": f"https://sfgov.legistar.com/LegislationDetail.aspx?ID={m['MatterId']}",
+            "date_checked": datetime.utcnow().date().isoformat()
+        }
 
         push_to_notion(item)
+
 
     print("✅ Legistar monitor run complete.")
 
