@@ -233,7 +233,7 @@ def push_to_notion(item):
 def run_monitor():
     matters = fetch_matters()
 
-    for m in matters:
+       for m in matters:
         text = " ".join(filter(None, [
             m.get("MatterName", ""),
             m.get("MatterTitle", ""),
