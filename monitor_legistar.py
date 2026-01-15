@@ -284,8 +284,14 @@ def push_to_notion(item):
 
 def run_monitor():
     matters = fetch_matters()
+    seen_matter_ids = set()
 
     for m in matters:
+        matter_id = m.get("MatterId")
+        if matter_id in seen_matter_ids:
+            continue
+        seen_matter_ids.add(matter_id)
+
         text = " ".join(filter(None, [
             m.get("MatterName", ""),
             m.get("MatterTitle", ""),
