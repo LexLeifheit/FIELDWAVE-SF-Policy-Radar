@@ -264,6 +264,11 @@ def push_to_notion(item):
             "date": {"start": item["action_date"]}
         }
 
+    if item["introduced_date"]:
+        properties["Introduced Date"] = {
+            "date": {"start": item["introduced_date"]}
+        }
+
     if item["final_action_date"]:
         properties["Final Action"] = {
             "date": {"start": item["final_action_date"]}
@@ -343,6 +348,9 @@ def run_monitor():
                 m.get("MatterLastActionDate")
                 or m.get("MatterFinalActionDate", "")
             ),
+            "introduced_date": parse_legistar_date(
+                m.get("MatterIntroDate", "")
+            ),
             "final_action_date": parse_legistar_date(
                 m.get("MatterPassedDate", "")
             ),
@@ -356,12 +364,10 @@ def run_monitor():
         }
 
         eligible_date = None
-        if item["action_date"]:
-            eligible_date = datetime.fromisoformat(item["action_date"]).date()
-        elif item["final_action_date"]:
-            eligible_date = datetime.fromisoformat(item["final_action_date"]).date()
+        if item["introduced_date"]:
+            eligible_date = datetime.fromisoformat(item["introduced_date"]).date()
 
-        if not eligible_date or eligible_date > cutoff_date:
+        if not eligible_date or eligible_date < cutoff_date:
             continue
 
         push_to_notion(item)
