@@ -355,7 +355,7 @@ def run_monitor():
             "date_checked": datetime.utcnow().date().isoformat()
         }
 
-         eligible_date = None
+        eligible_date = None
         if item["action_date"]:
             eligible_date = datetime.fromisoformat(item["action_date"]).date()
         elif item["final_action_date"]:
