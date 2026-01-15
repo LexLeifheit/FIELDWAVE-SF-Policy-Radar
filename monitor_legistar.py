@@ -117,16 +117,42 @@ def fetch_sponsors(matter_id):
     for s in sponsors:
         name = s.get("MatterSponsorName")
         seq = s.get("MatterSponsorSequence")
+        is_primary = s.get("MatterSponsorPrimary")
 
         if not name:
             continue
 
-        if seq == 1:
+        seq_num = None
+        if isinstance(seq, int):
+            seq_num = seq
+        elif isinstance(seq, str) and seq.isdigit():
+            seq_num = int(seq)
+
+        if is_primary is True or seq_num == 1:
             primary = name
-        elif seq and seq > 1:
+        elif seq_num and seq_num > 1:
             secondary.append(name)
 
     return primary, secondary
+
+def parse_legistar_date(value):
+    if not value:
+        return ""
+
+    if isinstance(value, str):
+        if value.startswith("/Date(") and value.endswith(")/"):
+            inner = value[len("/Date("):-len(")/")]
+            digits = "".join(ch for ch in inner if ch.isdigit())
+            if digits:
+                timestamp_ms = int(digits)
+                return datetime.utcfromtimestamp(timestamp_ms / 1000).date().isoformat()
+        try:
+            normalized = value.replace("Z", "+00:00")
+            return datetime.fromisoformat(normalized).date().isoformat()
+        except ValueError:
+            return ""
+
+    return ""
 
 def match_keywords(text):
     text = text.lower()
@@ -296,9 +322,15 @@ def run_monitor():
             "priority": priority,
             "department": m.get("Department", ""),
             "in_control": m.get("MatterInControlName", ""),
-            "action": m.get("MatterFinalActionName", ""),
-            "action_date": m.get("MatterFinalActionDate", ""),
-            "final_action_date": m.get("MatterPassedDate", ""),
+            "action": m.get("MatterLastActionName")
+            or m.get("MatterFinalActionName", ""),
+            "action_date": parse_legistar_date(
+                m.get("MatterLastActionDate")
+                or m.get("MatterFinalActionDate", "")
+            ),
+            "final_action_date": parse_legistar_date(
+                m.get("MatterPassedDate", "")
+            ),
             "primary_sponsor": primary_sponsor or "",
             "secondary_sponsors": secondary_sponsors,
             "committees": committees,
