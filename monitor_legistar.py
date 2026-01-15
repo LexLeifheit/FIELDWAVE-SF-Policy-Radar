@@ -154,6 +154,14 @@ def parse_legistar_date(value):
 
     return ""
 
+def subtract_years(date_value, years):
+    try:
+        return date_value.replace(year=date_value.year - years)
+    except ValueError:
+        if date_value.month == 2 and date_value.day == 29:
+            return date_value.replace(year=date_value.year - years, day=28)
+        raise
+        
 def match_keywords(text):
     text = text.lower()
     hits = {}
@@ -285,7 +293,8 @@ def push_to_notion(item):
 def run_monitor():
     matters = fetch_matters()
     seen_matter_ids = set()
-
+    cutoff_date = subtract_years(datetime.utcnow().date(), 3)
+    
     for m in matters:
         matter_id = m.get("MatterId")
         if matter_id in seen_matter_ids:
@@ -345,6 +354,15 @@ def run_monitor():
             "url": f"https://sfgov.legistar.com/LegislationDetail.aspx?ID={m['MatterId']}",
             "date_checked": datetime.utcnow().date().isoformat()
         }
+
+         eligible_date = None
+        if item["action_date"]:
+            eligible_date = datetime.fromisoformat(item["action_date"]).date()
+        elif item["final_action_date"]:
+            eligible_date = datetime.fromisoformat(item["final_action_date"]).date()
+
+        if not eligible_date or eligible_date > cutoff_date:
+            continue
 
         push_to_notion(item)
 
