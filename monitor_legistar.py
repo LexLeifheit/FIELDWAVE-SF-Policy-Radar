@@ -103,35 +103,22 @@ def fetch_history(matter_id):
     return r.json()
 
 def fetch_sponsors(matter_id):
-    """
-    Returns (primary_sponsor, secondary_sponsors[])
-    """
     r = requests.get(f"{LEGISTAR_BASE}/matters/{matter_id}/sponsors")
     if r.status_code != 200:
-        return None, []
+        return "", []
 
     sponsors = r.json()
-    primary = None
-    secondary = []
+    names = [
+        s.get("MatterSponsorName")
+        for s in sponsors
+        if s.get("MatterSponsorName")
+    ]
 
-    for s in sponsors:
-        name = s.get("MatterSponsorName")
-        seq = s.get("MatterSponsorSequence")
-        is_primary = s.get("MatterSponsorPrimary")
+    if not names:
+        return "", []
 
-        if not name:
-            continue
-
-        seq_num = None
-        if isinstance(seq, int):
-            seq_num = seq
-        elif isinstance(seq, str) and seq.isdigit():
-            seq_num = int(seq)
-
-        if is_primary is True or seq_num == 1:
-            primary = name
-        elif seq_num and seq_num > 1:
-            secondary.append(name)
+    primary = names[0]
+    secondary = names[1:] if len(names) > 1 else []
 
     return primary, secondary
 
