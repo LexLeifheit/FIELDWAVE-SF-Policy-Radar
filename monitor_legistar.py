@@ -363,11 +363,13 @@ def run_monitor():
             "date_checked": datetime.utcnow().date().isoformat()
         }
 
-        eligible_date = None
-        if item["introduced_date"]:
-            eligible_date = datetime.fromisoformat(item["introduced_date"]).date()
+        eligible_dates = [
+            datetime.fromisoformat(item[field]).date()
+            for field in ("action_date", "final_action_date", "introduced_date")
+            if item[field]
+        ]
 
-        if not eligible_date or eligible_date < cutoff_date:
+        if not eligible_dates or max(eligible_dates) < cutoff_date:
             continue
 
         push_to_notion(item)
