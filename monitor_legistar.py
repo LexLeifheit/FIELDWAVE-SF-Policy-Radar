@@ -20,45 +20,12 @@ if not NOTION_TOKEN or not NOTION_DATABASE_ID:
 # -------------------------------------------------
 
 KEYWORD_GROUPS = {
-    "arts_culture": [
-        "art", "artwork", "artworks", "arts", "public art",
-        "mural", "visual art", "culture", "cultural",
-        "monument", "sculpture", "painting"
-    ],
-    "artists_practice": [
-        "artist", "artists", "dance", "literary", "music", "film"
-    ],
-    "funding_tax": [
-        "hotel tax",
-        "transient occupancy tax",
-        "tot",
-        "budget and appropriation",
-        "appropriation ordinance",
-        "annual salary ordinance"
+    "keyword_match": [
+        "cultural",
+        "arts",
+        "entertainment"
     ]
 }
-
-SECONDARY_TRIGGER_DEPARTMENTS = [
-    "arts commission",
-    "public art program",
-    "asian art museum",
-    "department of children, youth and their families",
-    "economic and workforce development",
-    "office of economic and workforce development",
-    "fine arts museum",
-    "fine arts museums",
-    "grants for the arts",
-    "museum of the african diaspora",
-    "yerba buena center for the arts"
-]
-
-ESCALATION_COMMITTEES = [
-    "budget and finance",
-    "budget and appropriations",
-    "appropriations",
-    "government audit and oversight",
-    "rules committee"
-]
 KNOWN_STATUSES = {
     "30 Day Rule",
     "Completed",
@@ -171,24 +138,8 @@ def match_keywords(text):
             hits[group] = matches
     return hits
 
-def department_trigger(dept):
-    if not dept:
-        return False
-    d = dept.lower()
-    return any(x in d for x in SECONDARY_TRIGGER_DEPARTMENTS)
-
-def committee_escalation(committees):
-    for c in committees:
-        c = c.lower()
-        if any(e in c for e in ESCALATION_COMMITTEES):
-            return True
-    return False
-
-def assign_priority(keyword_hits, dept_hit, committee_hit):
-    funding_hit = "funding_tax" in keyword_hits
-    if funding_hit and (dept_hit or committee_hit):
-        return "HIGH"
-    if funding_hit or dept_hit or committee_hit:
+def assign_priority(keyword_hits):
+    if keyword_hits:
         return "MEDIUM"
     return "LOW"
 
@@ -320,13 +271,11 @@ def run_monitor():
             for h in history if h.get("MatterHistoryActionName")
         })
 
-        committee_hit = committee_escalation(committees)
-
         if not keyword_hits:
             continue
 
-        priority = assign_priority(keyword_hits, False, committee_hit)
-
+        priority = assign_priority(keyword_hits)
+        
         status = m.get("MatterStatusName", "Pending")
         if status not in KNOWN_STATUSES:
             status = "Pending"
