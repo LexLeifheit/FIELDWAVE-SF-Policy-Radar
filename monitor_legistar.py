@@ -260,7 +260,18 @@ def run_monitor():
         text = " ".join(filter(None, [
             m.get("MatterName", ""),
             m.get("MatterTitle", ""),
-            m.get("MatterText", "")
+            m.get("MatterText", ""),
+            m.get("MatterText1", ""),
+            m.get("MatterText2", ""),
+            m.get("MatterText3", ""),
+            m.get("MatterText4", ""),
+            m.get("MatterText5", ""),
+            m.get("MatterNotes", ""),
+            m.get("MatterRequester", ""),
+            m.get("MatterBodyName", ""),
+            m.get("MatterTypeName", ""),
+            m.get("MatterStatusName", ""),
+            m.get("MatterFile", "")
         ]))
 
         keyword_hits = match_keywords(text)
