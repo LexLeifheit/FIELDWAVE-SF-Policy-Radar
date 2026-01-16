@@ -103,22 +103,35 @@ def fetch_history(matter_id):
     return r.json()
 
 def fetch_sponsors(matter_id):
+    """
+    Returns (primary_sponsor, secondary_sponsors[])
+    """
     r = requests.get(f"{LEGISTAR_BASE}/matters/{matter_id}/sponsors")
     if r.status_code != 200:
-        return "", []
+        return None, []
 
     sponsors = r.json()
-    names = [
-        s.get("MatterSponsorName")
-        for s in sponsors
-        if s.get("MatterSponsorName")
-    ]
+    primary = None
+    secondary = []
 
-    if not names:
-        return "", []
+    for s in sponsors:
+        name = s.get("MatterSponsorName")
+        seq = s.get("MatterSponsorSequence")
+        is_primary = s.get("MatterSponsorPrimary")
 
-    primary = names[0]
-    secondary = names[1:] if len(names) > 1 else []
+        if not name:
+            continue
+
+        seq_num = None
+        if isinstance(seq, int):
+            seq_num = seq
+        elif isinstance(seq, str) and seq.isdigit():
+            seq_num = int(seq)
+
+        if is_primary is True or seq_num == 1:
+            primary = name
+        elif seq_num and seq_num > 1:
+            secondary.append(name)
 
     return primary, secondary
 
@@ -251,7 +264,12 @@ def push_to_notion(item):
             "date": {"start": item["action_date"]}
         }
 
-    if item["final_action_date"]:
+   if item["introduced_date"]:
+        properties["Introduced Date"] = {
+            "date": {"start": item["introduced_date"]}
+        }
+
+   if item["final_action_date"]:
         properties["Final Action"] = {
             "date": {"start": item["final_action_date"]}
         }
@@ -330,6 +348,9 @@ def run_monitor():
                 m.get("MatterLastActionDate")
                 or m.get("MatterFinalActionDate", "")
             ),
+             "introduced_date": parse_legistar_date(
+                m.get("MatterIntroDate", "")
+            ),
             "final_action_date": parse_legistar_date(
                 m.get("MatterPassedDate", "")
             ),
@@ -343,16 +364,13 @@ def run_monitor():
         }
 
         eligible_date = None
-        if item["action_date"]:
-            eligible_date = datetime.fromisoformat(item["action_date"]).date()
-        elif item["final_action_date"]:
-            eligible_date = datetime.fromisoformat(item["final_action_date"]).date()
+        if item["introduced_date"]:
+            eligible_date = datetime.fromisoformat(item["introduced_date"]).date()
 
-        if not eligible_date or eligible_date > cutoff_date:
+        if not eligible_date or eligible_date < cutoff_date:
             continue
 
         push_to_notion(item)
-
 
     print("✅ Legistar monitor run complete.")
 
