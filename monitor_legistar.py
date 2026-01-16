@@ -269,7 +269,7 @@ def push_to_notion(item):
             "date": {"start": item["introduced_date"]}
         }
 
-   if item["final_action_date"]:
+    if item["final_action_date"]:
         properties["Final Action"] = {
             "date": {"start": item["final_action_date"]}
         }
