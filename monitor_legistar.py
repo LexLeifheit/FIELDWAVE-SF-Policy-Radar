@@ -313,7 +313,6 @@ def run_monitor():
         ]))
 
         keyword_hits = match_keywords(text)
-        dept_hit = department_trigger(m.get("Department", ""))
 
         history = fetch_history(m["MatterId"])
         committees = list({
@@ -323,10 +322,10 @@ def run_monitor():
 
         committee_hit = committee_escalation(committees)
 
-        if not keyword_hits and not dept_hit:
+        if not keyword_hits:
             continue
 
-        priority = assign_priority(keyword_hits, dept_hit, committee_hit)
+        priority = assign_priority(keyword_hits, False, committee_hit)
 
         status = m.get("MatterStatusName", "Pending")
         if status not in KNOWN_STATUSES:
