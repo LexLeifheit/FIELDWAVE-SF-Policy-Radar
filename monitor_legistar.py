@@ -1,6 +1,10 @@
-import os
-import requests
 from datetime import datetime
+import os
+
+import requests
+from requests.adapters import HTTPAdapter
+from requests.exceptions import RequestException
+from urllib3.util.retry import Retry
 
 # -------------------------------------------------
 # CONFIG
@@ -14,6 +18,29 @@ NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
 if not NOTION_TOKEN or not NOTION_DATABASE_ID:
     raise RuntimeError("Missing NOTION_TOKEN or NOTION_DATABASE_ID")
+
+REQUEST_TIMEOUT = (10, 30)
+
+
+def build_session():
+    retry = Retry(
+        total=5,
+        connect=5,
+        read=5,
+        status=5,
+        backoff_factor=1,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=("GET", "POST"),
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session = requests.Session()
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+SESSION = build_session()
 
 # -------------------------------------------------
 # KEYWORDS
@@ -59,21 +86,39 @@ KNOWN_STATUSES = {
 # -------------------------------------------------
 
 def fetch_matters():
-    r = requests.get(f"{LEGISTAR_BASE}/matters")
-    r.raise_for_status()
-    return r.json()
+    try:
+        r = SESSION.get(f"{LEGISTAR_BASE}/matters", timeout=REQUEST_TIMEOUT)
+        r.raise_for_status()
+        return r.json()
+    except RequestException as exc:
+        raise RuntimeError(f"Failed to fetch matters: {exc}") from exc
 
 def fetch_history(matter_id):
-    r = requests.get(f"{LEGISTAR_BASE}/matters/{matter_id}/history")
-    if r.status_code != 200:
+    try:
+        r = SESSION.get(
+            f"{LEGISTAR_BASE}/matters/{matter_id}/history",
+            timeout=REQUEST_TIMEOUT,
+        )
+        if r.status_code != 200:
+            return []
+        return r.json()
+    except RequestException as exc:
+        print(f"Warning: failed to fetch history for {matter_id}: {exc}")
         return []
-    return r.json()
 
 def fetch_sponsors(matter_id):
     """
     Returns (primary_sponsor, secondary_sponsors[])
     """
-    r = requests.get(f"{LEGISTAR_BASE}/matters/{matter_id}/sponsors")
+    try:
+        r = SESSION.get(
+            f"{LEGISTAR_BASE}/matters/{matter_id}/sponsors",
+            timeout=REQUEST_TIMEOUT,
+        )
+    except RequestException as exc:
+        print(f"Warning: failed to fetch sponsors for {matter_id}: {exc}")
+        return None, []
+
     if r.status_code != 200:
         return None, []
 
@@ -230,11 +275,15 @@ def push_to_notion(item):
         "properties": properties
     }
 
-    r = requests.post(
-        NOTION_API,
-        headers=headers,
-        json=payload
-    )
+    try:
+        r = SESSION.post(
+            NOTION_API,
+            headers=headers,
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+    except RequestException as exc:
+        raise RuntimeError(f"Failed to push to Notion: {exc}") from exc
 
     if not r.ok:
         raise RuntimeError(f"Notion API error {r.status_code}: {r.text}")
