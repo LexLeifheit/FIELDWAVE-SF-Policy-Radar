@@ -1,6 +1,10 @@
-import os
-import requests
 from datetime import datetime
+import os
+
+import requests
+from requests.adapters import HTTPAdapter
+from requests.exceptions import RequestException
+from urllib3.util.retry import Retry
 
 # -------------------------------------------------
 # CONFIG
@@ -15,50 +19,40 @@ NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 if not NOTION_TOKEN or not NOTION_DATABASE_ID:
     raise RuntimeError("Missing NOTION_TOKEN or NOTION_DATABASE_ID")
 
+REQUEST_TIMEOUT = (10, 30)
+
+
+def build_session():
+    retry = Retry(
+        total=5,
+        connect=5,
+        read=5,
+        status=5,
+        backoff_factor=1,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=("GET", "POST"),
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session = requests.Session()
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+SESSION = build_session()
+
 # -------------------------------------------------
 # KEYWORDS
 # -------------------------------------------------
 
 KEYWORD_GROUPS = {
-    "arts_culture": [
-        "art", "artwork", "artworks", "arts", "public art",
-        "mural", "visual art", "culture", "cultural",
-        "monument", "sculpture", "painting"
-    ],
-    "artists_practice": [
-        "artist", "artists", "dance", "literary", "music", "film"
-    ],
-    "funding_tax": [
-        "hotel tax",
-        "transient occupancy tax",
-        "tot",
-        "budget and appropriation",
-        "appropriation ordinance",
-        "annual salary ordinance"
+    "keyword_match": [
+        "cultural",
+        "arts",
+        "entertainment"
     ]
 }
-
-SECONDARY_TRIGGER_DEPARTMENTS = [
-    "arts commission",
-    "public art program",
-    "asian art museum",
-    "department of children, youth and their families",
-    "economic and workforce development",
-    "office of economic and workforce development",
-    "fine arts museum",
-    "fine arts museums",
-    "grants for the arts",
-    "museum of the african diaspora",
-    "yerba buena center for the arts"
-]
-
-ESCALATION_COMMITTEES = [
-    "budget and finance",
-    "budget and appropriations",
-    "appropriations",
-    "government audit and oversight",
-    "rules committee"
-]
 KNOWN_STATUSES = {
     "30 Day Rule",
     "Completed",
@@ -92,21 +86,39 @@ KNOWN_STATUSES = {
 # -------------------------------------------------
 
 def fetch_matters():
-    r = requests.get(f"{LEGISTAR_BASE}/matters")
-    r.raise_for_status()
-    return r.json()
+    try:
+        r = SESSION.get(f"{LEGISTAR_BASE}/matters", timeout=REQUEST_TIMEOUT)
+        r.raise_for_status()
+        return r.json()
+    except RequestException as exc:
+        raise RuntimeError(f"Failed to fetch matters: {exc}") from exc
 
 def fetch_history(matter_id):
-    r = requests.get(f"{LEGISTAR_BASE}/matters/{matter_id}/history")
-    if r.status_code != 200:
+    try:
+        r = SESSION.get(
+            f"{LEGISTAR_BASE}/matters/{matter_id}/history",
+            timeout=REQUEST_TIMEOUT,
+        )
+        if r.status_code != 200:
+            return []
+        return r.json()
+    except RequestException as exc:
+        print(f"Warning: failed to fetch history for {matter_id}: {exc}")
         return []
-    return r.json()
 
 def fetch_sponsors(matter_id):
     """
     Returns (primary_sponsor, secondary_sponsors[])
     """
-    r = requests.get(f"{LEGISTAR_BASE}/matters/{matter_id}/sponsors")
+    try:
+        r = SESSION.get(
+            f"{LEGISTAR_BASE}/matters/{matter_id}/sponsors",
+            timeout=REQUEST_TIMEOUT,
+        )
+    except RequestException as exc:
+        print(f"Warning: failed to fetch sponsors for {matter_id}: {exc}")
+        return None, []
+
     if r.status_code != 200:
         return None, []
 
@@ -161,7 +173,7 @@ def subtract_years(date_value, years):
         if date_value.month == 2 and date_value.day == 29:
             return date_value.replace(year=date_value.year - years, day=28)
         raise
-
+        
 def match_keywords(text):
     text = text.lower()
     hits = {}
@@ -171,24 +183,8 @@ def match_keywords(text):
             hits[group] = matches
     return hits
 
-def department_trigger(dept):
-    if not dept:
-        return False
-    d = dept.lower()
-    return any(x in d for x in SECONDARY_TRIGGER_DEPARTMENTS)
-
-def committee_escalation(committees):
-    for c in committees:
-        c = c.lower()
-        if any(e in c for e in ESCALATION_COMMITTEES):
-            return True
-    return False
-
-def assign_priority(keyword_hits, dept_hit, committee_hit):
-    funding_hit = "funding_tax" in keyword_hits
-    if funding_hit and (dept_hit or committee_hit):
-        return "HIGH"
-    if funding_hit or dept_hit or committee_hit:
+def assign_priority(keyword_hits):
+    if keyword_hits:
         return "MEDIUM"
     return "LOW"
 
@@ -279,11 +275,15 @@ def push_to_notion(item):
         "properties": properties
     }
 
-    r = requests.post(
-        NOTION_API,
-        headers=headers,
-        json=payload
-    )
+    try:
+        r = SESSION.post(
+            NOTION_API,
+            headers=headers,
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+    except RequestException as exc:
+        raise RuntimeError(f"Failed to push to Notion: {exc}") from exc
 
     if not r.ok:
         raise RuntimeError(f"Notion API error {r.status_code}: {r.text}")
@@ -299,7 +299,7 @@ def run_monitor():
     matters = fetch_matters()
     seen_matter_ids = set()
     cutoff_date = subtract_years(datetime.utcnow().date(), 3)
-
+    
     for m in matters:
         matter_id = m.get("MatterId")
         if matter_id in seen_matter_ids:
@@ -309,7 +309,18 @@ def run_monitor():
         text = " ".join(filter(None, [
             m.get("MatterName", ""),
             m.get("MatterTitle", ""),
-            m.get("MatterText", "")
+            m.get("MatterText", ""),
+            m.get("MatterText1", ""),
+            m.get("MatterText2", ""),
+            m.get("MatterText3", ""),
+            m.get("MatterText4", ""),
+            m.get("MatterText5", ""),
+            m.get("MatterNotes", ""),
+            m.get("MatterRequester", ""),
+            m.get("MatterBodyName", ""),
+            m.get("MatterTypeName", ""),
+            m.get("MatterStatusName", ""),
+            m.get("MatterFile", "")
         ]))
 
         keyword_hits = match_keywords(text)
@@ -320,13 +331,11 @@ def run_monitor():
             for h in history if h.get("MatterHistoryActionName")
         })
 
-        committee_hit = committee_escalation(committees)
-
         if not keyword_hits:
             continue
 
-        priority = assign_priority(keyword_hits, False, committee_hit)
-
+        priority = assign_priority(keyword_hits)
+        
         status = m.get("MatterStatusName", "Pending")
         if status not in KNOWN_STATUSES:
             status = "Pending"
@@ -347,7 +356,7 @@ def run_monitor():
                 m.get("MatterLastActionDate")
                 or m.get("MatterFinalActionDate", "")
             ),
-            "introduced_date": parse_legistar_date(
+             "introduced_date": parse_legistar_date(
                 m.get("MatterIntroDate", "")
             ),
             "final_action_date": parse_legistar_date(
