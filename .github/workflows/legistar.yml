@@ -25,4 +25,4 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-        run: python monitor_current_agenda.py
+        run: python monitor_current_agenda_preserve_manual.py
