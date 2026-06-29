@@ -1,20 +1,20 @@
-FIELDWAVE SF Policy Radar
+**FIELDWAVE SF Policy Radar**
 
 A lightweight legislative intelligence system that monitors San Francisco legislation for developments affecting arts, culture, creative economy, and cultural infrastructure.
+
+This project is intentionally designed as a policy intelligence tool rather than a legislative database. The goal is not simply to mirror public records, but to surface meaningful changes that merit human attention.
 
 Rather than simply collecting legislative data, the project transforms Legistar records into an actionable policy dashboard that helps identify emerging opportunities, funding changes, governance issues, and legislation requiring attention.
 
 ⸻
 
-Purpose
+**Purpose**
 
-FIELDWAVE SF Policy Radar was built to answer a simple question:
-
-How can arts organizations, policymakers, funders, and advocates identify important legislation before it becomes tomorrow’s headline?
+FIELDWAVE SF Policy Radar was built to assist communities, organizations, policymakers, funders, and advocates identify important cultural infrastructure legislation proactively. 
 
 The system automatically reviews San Francisco legislative activity, applies arts- and culture-specific filtering, prioritizes items using policy rules, and publishes structured records into a Notion database for ongoing analysis.
 
-Current Features
+**Current Features**
 
 * Daily automated monitoring using GitHub Actions
 * Legistar API integration
@@ -23,21 +23,20 @@ Current Features
 * Department-based triggers
 * Budget and funding detection
 * Priority scoring (High / Medium / Low)
-* Committee escalation logic
+* Escalation logic
 * Sponsor tracking
 * Legislative status tracking
 
-Keyword Categories
+**Keyword Categories**
 
-Arts & Culture
+* Arts & Culture
 
-Artists & Practice
+* Artists & Practice
 
-Funding & Budget
+* Funding & Budget
 
 ⸻
-
-Department Triggers
+**Department Triggers**
 
 Additional review is triggered when legislation involves organizations such as:
 
@@ -48,7 +47,7 @@ Additional review is triggered when legislation involves organizations such as:
 
 ⸻
 
-Workflow
+**Workflow**
 
 San Francisco Legistar API
             │
@@ -67,18 +66,16 @@ Keyword + Department Analysis
             ▼
 FIELDWAVE SF Policy Radar
 
-Technology
+**Technology**
 
 * Python 3
 * GitHub Actions
 * GitHub Secrets
 * Notion API
-* Legistar REST API
+* Legistar API
 
-  Repository Structure
-  .github/
-    workflows/
-        legistar.yml
+**Long-Term Vision**
 
-monitor_legistar.py
-README.md
+FIELDWAVE Policy Radar is intended to become a scalable, replicable legislative intelligence framework for arts and cultural policy.
+
+While the current implementation focuses on San Francisco, the architecture is designed to expand to additional cities and states, supporting policy monitoring across the broader cultural sector.
