@@ -26,6 +26,7 @@ NOTION_API = "https://api.notion.com/v1/pages"
 NOTION_VERSION = "2025-09-03"
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
+NOTION_DATA_SOURCE_ID = os.environ.get("NOTION_DATA_SOURCE_ID")
 
 REQUEST_TIMEOUT = (10, 30)
 DEFAULT_LOOKBACK_YEARS = 3
@@ -525,8 +526,12 @@ def push_to_notion(item):
             "date": {"start": item["final_action_date"]}
         }
 
+    parent = {"database_id": NOTION_DATABASE_ID}
+    if NOTION_DATA_SOURCE_ID:
+        parent = {"data_source_id": NOTION_DATA_SOURCE_ID}
+
     payload = {
-        "parent": {"database_id": NOTION_DATABASE_ID},
+        "parent": parent,
         "properties": properties
     }
 
@@ -540,8 +545,35 @@ def push_to_notion(item):
     except RequestException as exc:
         raise RuntimeError(f"Failed to push to Notion: {exc}") from exc
 
-    if not r.ok:
-        raise RuntimeError(f"Notion API error {r.status_code}: {r.text}")
+    if r.ok:
+        return
+
+    try:
+        error_body = r.json()
+    except ValueError:
+        error_body = {}
+
+    child_data_source_ids = (
+        error_body
+        .get("additional_data", {})
+        .get("child_data_source_ids", [])
+    )
+    if (
+        r.status_code == 400
+        and child_data_source_ids
+        and "database_id" in payload["parent"]
+    ):
+        payload["parent"] = {"data_source_id": child_data_source_ids[0]}
+        r = SESSION.post(
+            NOTION_API,
+            headers=headers,
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+        if r.ok:
+            return
+
+    raise RuntimeError(f"Notion API error {r.status_code}: {r.text}")
 
 
 
