@@ -15,6 +15,8 @@ from urllib3.util.retry import Retry
 
 LEGISTAR_SITE = "https://sfgov.legistar.com"
 NOTION_PAGES_API = "https://api.notion.com/v1/pages"
+NOTION_DATA_SOURCES_API = "https://api.notion.com/v1/data_sources"
+NOTION_DATABASES_API = "https://api.notion.com/v1/databases"
 NOTION_VERSION = "2025-09-03"
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
@@ -94,6 +96,10 @@ FIELD_SPECS = [
     ("action_date", ["Action Date", "Latest Action Date", "Meeting Date"], lambda item: item["action_date"]),
     ("introduced_date", ["Introduced Date", "Introduction Date"], lambda item: item["introduced_date"]),
     ("final_action_date", ["Final Action", "Final Action Date"], lambda item: item["final_action_date"]),
+    ("passed", ["Passed", "Passed?"], lambda item: item["passed"]),
+    ("failed", ["Failed", "Failed?"], lambda item: item["failed"]),
+    ("passed_date", ["Passed Date"], lambda item: item["passed_date"]),
+    ("failed_date", ["Failed Date"], lambda item: item["failed_date"]),
 ]
 
 
@@ -136,6 +142,101 @@ def parse_display_date(value):
         except ValueError:
             pass
     return ""
+
+
+def clean_label(value):
+    return " ".join(value.replace("\xa0", " ").strip().rstrip(":").lower().split())
+
+
+def clean_value(value):
+    return " ".join(value.replace("\xa0", " ").split())
+
+
+def normalize_action(value):
+    return clean_value(value).upper()
+
+
+def parse_detail_pairs(soup):
+    details = {}
+    for row in soup.find_all("tr"):
+        cells = [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
+        if len(cells) < 2:
+            continue
+        for index in range(0, len(cells) - 1, 2):
+            label = clean_label(cells[index])
+            value = clean_value(cells[index + 1])
+            if label and value and len(label) <= 40:
+                details[label] = value
+    return details
+
+
+def parse_history_rows(soup):
+    rows = []
+    for row in soup.find_all("tr"):
+        cells = [clean_value(cell.get_text(" ", strip=True)) for cell in row.find_all(["th", "td"])]
+        if len(cells) < 5 or cells[0] == "Date":
+            continue
+        if not parse_display_date(cells[0]):
+            continue
+        action = cells[3] if len(cells) > 3 else ""
+        result = cells[4] if len(cells) > 4 else ""
+        if action:
+            rows.append({
+                "date": parse_display_date(cells[0]),
+                "action_by": cells[2] if len(cells) > 2 else "",
+                "action": action,
+                "result": result,
+            })
+    return rows
+
+
+def enrich_from_legislation_detail(item):
+    soup = BeautifulSoup(fetch_page(item["url"]), "html.parser")
+    details = parse_detail_pairs(soup)
+    history = parse_history_rows(soup)
+
+    item["file_number"] = re.sub(r"\s+Version:.*$", "", details.get("file #", item["file_number"])).strip()
+    item["title"] = details.get("title", item["title"])
+    item["type"] = details.get("type", item["type"])
+    item["status"] = details.get("status", item["status"])
+    item["introduced_date"] = parse_display_date(details.get("introduced", "")) or item["introduced_date"]
+    item["final_action_date"] = parse_display_date(details.get("final action", "")) or item["final_action_date"]
+    item["in_control"] = details.get("in control", item["in_control"])
+
+    if history:
+        latest = max(history, key=lambda row: row["date"])
+        item["action_date"] = latest["date"]
+        item["action"] = latest["action"]
+        if latest["action_by"]:
+            item["in_control"] = latest["action_by"]
+        item["committees"] = list(dict.fromkeys(
+            compact_list(item["committees"]) + [
+                row["action_by"] for row in history if row["action_by"]
+            ]
+        ))
+
+    action_text = " ".join(
+        [item["status"], item["action"]]
+        + [row["action"] for row in history]
+        + [row["result"] for row in history]
+    )
+    normalized = normalize_action(action_text)
+    item["passed"] = any(word in normalized for word in ("PASSED", "ADOPTED", "APPROVED", "FINALLY PASSED"))
+    item["failed"] = any(word in normalized for word in ("FAILED", "DISAPPROVED", "VETOED", "KILLED", "WITHDRAWN"))
+
+    for row in history:
+        row_text = normalize_action(f"{row['action']} {row['result']}")
+        if not item["passed_date"] and any(word in row_text for word in ("PASSED", "ADOPTED", "APPROVED", "FINALLY PASSED")):
+            item["passed_date"] = row["date"]
+        if not item["failed_date"] and any(word in row_text for word in ("FAILED", "DISAPPROVED", "VETOED", "KILLED", "WITHDRAWN")):
+            item["failed_date"] = row["date"]
+
+    if item["final_action_date"] and item["passed"] and not item["passed_date"]:
+        item["passed_date"] = item["final_action_date"]
+    if item["final_action_date"] and item["failed"] and not item["failed_date"]:
+        item["failed_date"] = item["final_action_date"]
+
+    return item
 
 
 def parse_legislation_id(url):
@@ -257,6 +358,10 @@ def fetch_recent_agenda_items(days=DEFAULT_AGENDA_LOOKBACK_DAYS, limit=None):
                     "action_date": meeting["date"],
                     "introduced_date": "",
                     "final_action_date": "",
+                    "passed": False,
+                    "failed": False,
+                    "passed_date": "",
+                    "failed_date": "",
                     "primary_sponsor": "",
                     "secondary_sponsors": [],
                     "committees": [meeting["name"]],
@@ -265,6 +370,7 @@ def fetch_recent_agenda_items(days=DEFAULT_AGENDA_LOOKBACK_DAYS, limit=None):
                     "url": detail_url,
                     "date_checked": datetime.utcnow().date().isoformat(),
                 })
+                enrich_from_legislation_detail(items[-1])
                 if limit and len(items) >= limit:
                     return items
 
@@ -331,8 +437,8 @@ def notion_property_value(property_type, value):
 
 def fetch_notion_schema(parent_id, headers):
     for endpoint in (
-        f"https://api.notion.com/v1/data_sources/{parent_id}",
-        f"https://api.notion.com/v1/databases/{parent_id}",
+        f"{NOTION_DATA_SOURCES_API}/{parent_id}",
+        f"{NOTION_DATABASES_API}/{parent_id}",
     ):
         try:
             response = SESSION.get(endpoint, headers=headers, timeout=REQUEST_TIMEOUT)
@@ -341,6 +447,14 @@ def fetch_notion_schema(parent_id, headers):
         if response.ok:
             return response.json().get("properties", {})
     return None
+
+
+def discover_child_data_source_ids(response):
+    try:
+        error_body = response.json()
+    except ValueError:
+        return []
+    return error_body.get("additional_data", {}).get("child_data_source_ids", [])
 
 
 def find_property(schema, aliases, preferred_type=None):
@@ -365,6 +479,8 @@ def default_property_type(key):
         return "url"
     if key == "date_checked" or key.endswith("_date"):
         return "date"
+    if key in {"passed", "failed"}:
+        return "checkbox"
     return "rich_text"
 
 
@@ -402,6 +518,115 @@ def post_to_notion(parent, item, headers, schema=None):
         raise RuntimeError(f"Failed to push to Notion: {exc}") from exc
 
 
+def patch_notion_page(page_id, item, headers, schema=None):
+    payload = {"properties": build_notion_properties(item, schema)}
+    try:
+        return SESSION.patch(
+            f"{NOTION_PAGES_API}/{page_id}",
+            headers=headers,
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+    except RequestException as exc:
+        raise RuntimeError(f"Failed to update Notion page {page_id}: {exc}") from exc
+
+
+def archive_notion_page(page_id, headers):
+    try:
+        response = SESSION.patch(
+            f"{NOTION_PAGES_API}/{page_id}",
+            headers=headers,
+            json={"archived": True},
+            timeout=REQUEST_TIMEOUT,
+        )
+    except RequestException as exc:
+        print(f"Warning: failed to archive duplicate Notion page {page_id}: {exc}")
+        return False
+    if not response.ok:
+        print(f"Warning: failed to archive duplicate Notion page {page_id}: {response.text}")
+    return response.ok
+
+
+def filter_for_property(property_name, property_type, value):
+    text = compact_text(value)
+    if not text:
+        return None
+    if property_type == "title":
+        return {"property": property_name, "title": {"equals": text}}
+    if property_type == "rich_text":
+        return {"property": property_name, "rich_text": {"equals": text}}
+    if property_type == "number":
+        number = parse_number(text)
+        return {"property": property_name, "number": {"equals": number}} if number is not None else None
+    if property_type == "select":
+        return {"property": property_name, "select": {"equals": text}}
+    return None
+
+
+def query_notion_parent(parent, headers, schema, file_number):
+    file_property = find_property(
+        schema or {},
+        ["File Number", "File", "File No.", "File No"],
+    )
+    if not file_property:
+        return []
+
+    query_filter = filter_for_property(
+        file_property,
+        schema[file_property].get("type"),
+        file_number,
+    )
+    if not query_filter:
+        return []
+
+    if "data_source_id" in parent:
+        endpoint = f"{NOTION_DATA_SOURCES_API}/{parent['data_source_id']}/query"
+    else:
+        endpoint = f"{NOTION_DATABASES_API}/{parent['database_id']}/query"
+
+    try:
+        response = SESSION.post(
+            endpoint,
+            headers=headers,
+            json={"filter": query_filter, "page_size": 100},
+            timeout=REQUEST_TIMEOUT,
+        )
+    except RequestException as exc:
+        print(f"Warning: failed to query Notion for file {file_number}: {exc}")
+        return []
+
+    if not response.ok:
+        return []
+    return response.json().get("results", [])
+
+
+def sort_existing_pages(pages, schema):
+    date_property = find_property(schema or {}, ["Date Checked", "Checked", "Last Checked"], preferred_type="date")
+
+    def checked_date(page):
+        if not date_property:
+            return ""
+        date_value = page.get("properties", {}).get(date_property, {}).get("date") or {}
+        return date_value.get("start") or ""
+
+    return sorted(pages, key=checked_date, reverse=True)
+
+
+def upsert_notion_page(parent, item, headers, schema=None):
+    matches = sort_existing_pages(
+        query_notion_parent(parent, headers, schema, item["file_number"]),
+        schema,
+    )
+    if matches:
+        page_id = matches[0]["id"]
+        response = patch_notion_page(page_id, item, headers, schema)
+        if response.ok:
+            for duplicate in matches[1:]:
+                archive_notion_page(duplicate["id"], headers)
+        return response
+    return post_to_notion(parent, item, headers, schema)
+
+
 def push_to_notion(item):
     if not NOTION_TOKEN or not (NOTION_DATABASE_ID or NOTION_DATA_SOURCE_ID):
         raise RuntimeError("Missing Notion credentials. Use --dry-run to preview without exporting.")
@@ -409,23 +634,18 @@ def push_to_notion(item):
     headers = notion_headers()
     if NOTION_DATA_SOURCE_ID:
         schema = fetch_notion_schema(NOTION_DATA_SOURCE_ID, headers)
-        response = post_to_notion({"data_source_id": NOTION_DATA_SOURCE_ID}, item, headers, schema)
+        response = upsert_notion_page({"data_source_id": NOTION_DATA_SOURCE_ID}, item, headers, schema)
     else:
         schema = fetch_notion_schema(NOTION_DATABASE_ID, headers)
-        response = post_to_notion({"database_id": NOTION_DATABASE_ID}, item, headers, schema)
+        response = upsert_notion_page({"database_id": NOTION_DATABASE_ID}, item, headers, schema)
 
     if response.ok:
         return
 
-    try:
-        error_body = response.json()
-    except ValueError:
-        error_body = {}
-
-    child_ids = error_body.get("additional_data", {}).get("child_data_source_ids", [])
+    child_ids = discover_child_data_source_ids(response)
     for data_source_id in child_ids:
         schema = fetch_notion_schema(data_source_id, headers)
-        response = post_to_notion({"data_source_id": data_source_id}, item, headers, schema)
+        response = upsert_notion_page({"data_source_id": data_source_id}, item, headers, schema)
         if response.ok:
             return
 
