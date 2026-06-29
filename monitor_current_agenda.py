@@ -100,6 +100,102 @@ FIELD_SPECS = [
     ("failed", ["Failed", "Failed?"], lambda item: item["failed"]),
     ("passed_date", ["Passed Date"], lambda item: item["passed_date"]),
     ("failed_date", ["Failed Date"], lambda item: item["failed_date"]),
+    ("primary_category", ["Primary Category", "Category"], lambda item: item["primary_category"]),
+    ("subcategories", ["Subcategories", "Subcategory"], lambda item: item["subcategories"]),
+    ("impact_level", ["Impact Level", "Impact"], lambda item: item["impact_level"]),
+    ("policy_signal", ["Policy Signal", "Policy Signals", "Signal"], lambda item: item["policy_signal"]),
+    ("urgency", ["Urgency"], lambda item: item["urgency"]),
+]
+
+
+TAXONOMY_RULES = [
+    {"category": "Definitions & Cultural Recognition", "subcategory": "Arts & Culture Definitions", "keywords": ["art", "arts", "culture", "cultural definition", "creative sector"]},
+    {"category": "Definitions & Cultural Recognition", "subcategory": "Creative Economy Definitions", "keywords": ["creative economy", "creative sector", "cultural economy"]},
+    {"category": "Definitions & Cultural Recognition", "subcategory": "Cultural Districts", "keywords": ["cultural district", "arts district", "special use district"]},
+    {"category": "Definitions & Cultural Recognition", "subcategory": "Cultural Designations", "keywords": ["designation", "landmark", "historic designation", "recognition"]},
+    {"category": "Definitions & Cultural Recognition", "subcategory": "Public Art Definitions", "keywords": ["public art", "civic art", "percent for art definition"]},
+    {"category": "Definitions & Cultural Recognition", "subcategory": "Heritage & Legacy Business", "keywords": ["legacy business", "heritage business", "cultural legacy"]},
+    {"category": "Definitions & Cultural Recognition", "subcategory": "Cultural Property & Authorship", "keywords": ["intellectual property", "cultural ownership", "traditional knowledge"]},
+    {"category": "Safety, Belonging & Cultural Equity", "subcategory": "Cultural Equity Mandates", "keywords": ["equity", "cultural equity", "racial equity", "inclusion"]},
+    {"category": "Safety, Belonging & Cultural Equity", "subcategory": "Anti-Displacement", "keywords": ["displacement", "eviction", "gentrification", "tenant protection"]},
+    {"category": "Safety, Belonging & Cultural Equity", "subcategory": "Placekeeping", "keywords": ["placekeeping", "community preservation", "neighborhood identity"]},
+    {"category": "Safety, Belonging & Cultural Equity", "subcategory": "Free Expression", "keywords": ["free speech", "artistic expression", "first amendment"]},
+    {"category": "Safety, Belonging & Cultural Equity", "subcategory": "Censorship", "keywords": ["ban", "restriction", "prohibited content", "censorship"]},
+    {"category": "Safety, Belonging & Cultural Equity", "subcategory": "Hate Crime Response", "keywords": ["hate crime", "bias incident", "protected class"]},
+    {"category": "Safety, Belonging & Cultural Equity", "subcategory": "Public Space Access", "keywords": ["public space", "plaza", "park access", "civic space"]},
+    {"category": "Safety, Belonging & Cultural Equity", "subcategory": "Policing Impacts", "keywords": ["policing", "enforcement", "surveillance", "public safety"]},
+    {"category": "Safety, Belonging & Cultural Equity", "subcategory": "Culturally Responsive Investment", "keywords": ["equity funding", "targeted investment", "underserved communities"]},
+    {"category": "Health, Loneliness & Well-Being", "subcategory": "Arts in Public Health", "keywords": ["public health", "arts health", "community health"]},
+    {"category": "Health, Loneliness & Well-Being", "subcategory": "Social Prescribing", "keywords": ["social prescribing", "arts prescription", "referral program"]},
+    {"category": "Health, Loneliness & Well-Being", "subcategory": "Mental Health Programs", "keywords": ["mental health", "behavioral health", "wellness"]},
+    {"category": "Health, Loneliness & Well-Being", "subcategory": "Youth Well-Being", "keywords": ["youth development", "youth services", "youth programs"]},
+    {"category": "Health, Loneliness & Well-Being", "subcategory": "Aging & Isolation", "keywords": ["seniors", "aging", "isolation", "elder services"]},
+    {"category": "Health, Loneliness & Well-Being", "subcategory": "Medi-Cal / Medicaid Arts", "keywords": ["Medi-Cal", "Medicaid", "reimbursement", "healthcare funding"]},
+    {"category": "Creative Economy, Small Business & Entrepreneurship", "subcategory": "Creative Business Support", "keywords": ["small business", "grant", "technical assistance", "entrepreneurship"]},
+    {"category": "Creative Economy, Small Business & Entrepreneurship", "subcategory": "Small Business Assistance", "keywords": ["business support", "microbusiness", "storefront support"]},
+    {"category": "Creative Economy, Small Business & Entrepreneurship", "subcategory": "Tax Credits & Incentives", "keywords": ["tax credit", "tax incentive", "rebate", "exemption"]},
+    {"category": "Creative Economy, Small Business & Entrepreneurship", "subcategory": "Commercial Rent", "keywords": ["commercial rent", "lease", "rent control", "vacancy"]},
+    {"category": "Creative Economy, Small Business & Entrepreneurship", "subcategory": "Creative Enterprise Zones", "keywords": ["enterprise zone", "economic zone", "incentive zone"]},
+    {"category": "Creative Economy, Small Business & Entrepreneurship", "subcategory": "Procurement & Contracts", "keywords": ["procurement", "contracting", "city vendor", "RFP"]},
+    {"category": "Creative Economy, Small Business & Entrepreneurship", "subcategory": "Tourism & Creative Economy", "keywords": ["tourism", "visitor economy", "hospitality", "hotel"]},
+    {"category": "Creative Economy, Small Business & Entrepreneurship", "subcategory": "Micro-Enterprise Support", "keywords": ["freelancer", "self-employed", "microbusiness"]},
+    {"category": "Creative Economy, Small Business & Entrepreneurship", "subcategory": "Creative Industries", "keywords": ["film", "music", "design", "media", "entertainment industry"]},
+    {"category": "Gig Work, Labor & Workforce Protections", "subcategory": "Independent Contractor Rules", "keywords": ["contractor", "AB5", "classification", "employment status"]},
+    {"category": "Gig Work, Labor & Workforce Protections", "subcategory": "Portable Benefits", "keywords": ["portable benefits", "benefits fund", "gig benefits"]},
+    {"category": "Gig Work, Labor & Workforce Protections", "subcategory": "Wage Standards", "keywords": ["wages", "minimum pay", "compensation", "stipend"]},
+    {"category": "Gig Work, Labor & Workforce Protections", "subcategory": "Unionization", "keywords": ["union", "collective bargaining", "labor organizing"]},
+    {"category": "Gig Work, Labor & Workforce Protections", "subcategory": "Workplace Protections", "keywords": ["workplace safety", "harassment", "labor law"]},
+    {"category": "Gig Work, Labor & Workforce Protections", "subcategory": "AI & Labor", "keywords": ["AI training", "dataset use", "automation", "creative rights"]},
+    {"category": "Education & Creative Workforce Pipeline", "subcategory": "Arts Education", "keywords": ["arts education", "arts curriculum", "school arts"]},
+    {"category": "Education & Creative Workforce Pipeline", "subcategory": "Career Technical Education", "keywords": ["CTE", "vocational", "career training"]},
+    {"category": "Education & Creative Workforce Pipeline", "subcategory": "Cultural Curriculum", "keywords": ["ethnic studies", "cultural curriculum", "history education"]},
+    {"category": "Education & Creative Workforce Pipeline", "subcategory": "After-School Arts", "keywords": ["after school", "enrichment", "youth arts"]},
+    {"category": "Education & Creative Workforce Pipeline", "subcategory": "Higher Education Pipeline", "keywords": ["college arts", "university arts", "higher ed"]},
+    {"category": "Education & Creative Workforce Pipeline", "subcategory": "Workforce Development", "keywords": ["workforce", "job training", "apprenticeship"]},
+    {"category": "Housing & Creative Space", "subcategory": "Artist Housing", "keywords": ["artist housing", "affordable housing artists"]},
+    {"category": "Housing & Creative Space", "subcategory": "Live-Work Space", "keywords": ["live/work", "zoning", "mixed-use"]},
+    {"category": "Housing & Creative Space", "subcategory": "Studio Space Preservation", "keywords": ["studio", "workspace", "maker space"]},
+    {"category": "Housing & Creative Space", "subcategory": "Adaptive Reuse", "keywords": ["reuse", "conversion", "adaptive reuse"]},
+    {"category": "Housing & Creative Space", "subcategory": "Anti-Displacement Housing", "keywords": ["eviction protection", "tenant rights", "affordability"]},
+    {"category": "Housing & Creative Space", "subcategory": "Short-Term Rentals", "keywords": ["short term rental", "Airbnb", "STR regulation"]},
+    {"category": "Performance, Venues & Nightlife", "subcategory": "Venues & Permitting", "keywords": ["permit", "licensing", "venue approval"]},
+    {"category": "Performance, Venues & Nightlife", "subcategory": "Entertainment Zones", "keywords": ["entertainment zone", "nightlife zone"]},
+    {"category": "Performance, Venues & Nightlife", "subcategory": "Nightlife Policy", "keywords": ["nightlife", "late-night economy"]},
+    {"category": "Performance, Venues & Nightlife", "subcategory": "Noise Ordinances", "keywords": ["noise", "sound", "decibel"]},
+    {"category": "Performance, Venues & Nightlife", "subcategory": "Street Performance", "keywords": ["busking", "street performance"]},
+    {"category": "Performance, Venues & Nightlife", "subcategory": "Festivals & Events", "keywords": ["festival", "event permit", "street fair"]},
+    {"category": "Performance, Venues & Nightlife", "subcategory": "Drag Performance", "keywords": ["drag", "performance restriction"]},
+    {"category": "Performance, Venues & Nightlife", "subcategory": "Alcohol & Food Service", "keywords": ["alcohol permit", "liquor license", "food service"]},
+    {"category": "Public Space, Placemaking & Infrastructure", "subcategory": "Public Art Funding", "keywords": ["public art", "percent for art", "art funding"]},
+    {"category": "Public Space, Placemaking & Infrastructure", "subcategory": "Creative Placemaking", "keywords": ["placemaking", "activation", "public realm"]},
+    {"category": "Public Space, Placemaking & Infrastructure", "subcategory": "Placekeeping", "keywords": ["placekeeping", "community preservation"]},
+    {"category": "Public Space, Placemaking & Infrastructure", "subcategory": "Parks Programming", "keywords": ["parks", "recreation programming"]},
+    {"category": "Public Space, Placemaking & Infrastructure", "subcategory": "Street Closures", "keywords": ["street closure", "car-free", "permit"]},
+    {"category": "Public Space, Placemaking & Infrastructure", "subcategory": "Open Streets", "keywords": ["open streets", "slow streets"]},
+    {"category": "Public Space, Placemaking & Infrastructure", "subcategory": "Cultural Facilities", "keywords": ["cultural center", "arts facility"]},
+    {"category": "Public Space, Placemaking & Infrastructure", "subcategory": "Transportation Access", "keywords": ["transit", "accessibility", "mobility"]},
+    {"category": "Public Funding & Finance", "subcategory": "General Fund", "keywords": ["general fund", "budget allocation"]},
+    {"category": "Public Funding & Finance", "subcategory": "Hotel Tax (TOT)", "keywords": ["hotel tax", "TOT", "transient occupancy tax"]},
+    {"category": "Public Funding & Finance", "subcategory": "Grants for the Arts", "keywords": ["grants", "arts funding program"]},
+    {"category": "Public Funding & Finance", "subcategory": "Budget Appropriations", "keywords": ["appropriation", "budget ordinance"]},
+    {"category": "Public Funding & Finance", "subcategory": "Capital Funding", "keywords": ["capital project", "infrastructure funding"]},
+    {"category": "Public Funding & Finance", "subcategory": "Bond Measures", "keywords": ["bond", "ballot measure"]},
+    {"category": "Public Funding & Finance", "subcategory": "Percent for Art", "keywords": ["percent for art", "developer requirement"]},
+    {"category": "Public Funding & Finance", "subcategory": "Philanthropic Incentives", "keywords": ["philanthropy", "donation incentive"]},
+    {"category": "Governance, Commissions & Policy Structure", "subcategory": "Arts Commission", "keywords": ["arts commission", "cultural agency"]},
+    {"category": "Governance, Commissions & Policy Structure", "subcategory": "Commission Reform", "keywords": ["restructuring", "consolidation", "reform"]},
+    {"category": "Governance, Commissions & Policy Structure", "subcategory": "Advisory Bodies", "keywords": ["advisory board", "task force"]},
+    {"category": "Governance, Commissions & Policy Structure", "subcategory": "Interagency Coordination", "keywords": ["coordination", "interdepartmental"]},
+    {"category": "Governance, Commissions & Policy Structure", "subcategory": "Accountability & Reporting", "keywords": ["reporting", "audit", "oversight"]},
+    {"category": "Technology, AI & Digital Culture", "subcategory": "AI & Copyright", "keywords": ["AI copyright", "generative AI"]},
+    {"category": "Technology, AI & Digital Culture", "subcategory": "Digital Distribution", "keywords": ["streaming", "distribution platform"]},
+    {"category": "Technology, AI & Digital Culture", "subcategory": "Platform Regulation", "keywords": ["platform", "marketplace regulation"]},
+    {"category": "Technology, AI & Digital Culture", "subcategory": "Data Ownership", "keywords": ["data ownership", "rights", "privacy"]},
+    {"category": "Technology, AI & Digital Culture", "subcategory": "NFTs & Blockchain", "keywords": ["NFT", "blockchain"]},
+    {"category": "Cultural Diplomacy & International Exchange", "subcategory": "Artist Mobility", "keywords": ["visa", "travel", "artist mobility"]},
+    {"category": "Cultural Diplomacy & International Exchange", "subcategory": "Cultural Exchange", "keywords": ["exchange program", "international collaboration"]},
+    {"category": "Cultural Diplomacy & International Exchange", "subcategory": "International Funding", "keywords": ["international grant", "global funding"]},
+    {"category": "Cultural Diplomacy & International Exchange", "subcategory": "Creative Exports", "keywords": ["export", "trade", "creative goods"]},
 ]
 
 
@@ -154,6 +250,88 @@ def clean_value(value):
 
 def normalize_action(value):
     return clean_value(value).upper()
+
+
+def contains_any(text, keywords):
+    return any(re.search(rf"\b{re.escape(keyword)}\b", text) for keyword in keywords)
+
+
+def classify_policy_taxonomy(item):
+    text = " ".join([
+        item["title"],
+        item["type"],
+        item["status"],
+        item["action"],
+        item["department"],
+        item["in_control"],
+        " ".join(item["keyword_groups"]),
+        " ".join(item["committees"]),
+    ]).lower()
+
+    matched_rules = [
+        rule for rule in TAXONOMY_RULES
+        if contains_any(text, rule["keywords"])
+    ]
+
+    if not matched_rules:
+        matched_rules = [{
+            "category": "Definitions & Cultural Recognition",
+            "subcategory": "Arts & Culture Definitions",
+        }]
+
+    category_rank = [
+        "Public Funding & Finance",
+        "Performance, Venues & Nightlife",
+        "Housing & Creative Space",
+        "Safety, Belonging & Cultural Equity",
+        "Creative Economy, Small Business & Entrepreneurship",
+        "Gig Work, Labor & Workforce Protections",
+        "Public Space, Placemaking & Infrastructure",
+        "Governance, Commissions & Policy Structure",
+        "Education & Creative Workforce Pipeline",
+        "Health, Loneliness & Well-Being",
+        "Technology, AI & Digital Culture",
+        "Cultural Diplomacy & International Exchange",
+        "Definitions & Cultural Recognition",
+    ]
+    categories = [rule["category"] for rule in matched_rules]
+    item["primary_category"] = min(
+        categories,
+        key=lambda category: category_rank.index(category)
+        if category in category_rank else len(category_rank),
+    )
+    item["subcategories"] = list(dict.fromkeys(
+        rule["subcategory"]
+        for rule in matched_rules
+    ))
+    item["policy_signal"] = list(dict.fromkeys(
+        f"{rule['category']}: {rule['subcategory']}"
+        for rule in matched_rules
+    ))
+
+    if item["passed"] or item["failed"]:
+        item["urgency"] = "Closed / Outcome Recorded"
+    elif item["status"] in {"For Immediate Adoption", "New Business", "Pending Committee Action"}:
+        item["urgency"] = "Immediate"
+    elif item["action_date"] >= (datetime.utcnow().date() - timedelta(days=7)).isoformat():
+        item["urgency"] = "Active"
+    else:
+        item["urgency"] = "Watch"
+
+    if (
+        item["priority"] == "HIGH"
+        or item["primary_category"] == "Public Funding & Finance"
+        or item["urgency"] == "Immediate"
+        or item["passed"]
+        or item["failed"]
+    ):
+        item["impact_level"] = "High"
+    elif len(item["subcategories"]) > 1 or item["type"] in {"Ordinance", "Resolution"}:
+        item["impact_level"] = "Medium"
+    else:
+        item["impact_level"] = "Low"
+
+    return item
 
 
 def parse_detail_pairs(soup):
@@ -362,6 +540,11 @@ def fetch_recent_agenda_items(days=DEFAULT_AGENDA_LOOKBACK_DAYS, limit=None):
                     "failed": False,
                     "passed_date": "",
                     "failed_date": "",
+                    "primary_category": "",
+                    "subcategories": [],
+                    "impact_level": "",
+                    "policy_signal": [],
+                    "urgency": "",
                     "primary_sponsor": "",
                     "secondary_sponsors": [],
                     "committees": [meeting["name"]],
@@ -371,6 +554,7 @@ def fetch_recent_agenda_items(days=DEFAULT_AGENDA_LOOKBACK_DAYS, limit=None):
                     "date_checked": datetime.utcnow().date().isoformat(),
                 })
                 enrich_from_legislation_detail(items[-1])
+                classify_policy_taxonomy(items[-1])
                 if limit and len(items) >= limit:
                     return items
 
@@ -421,11 +605,13 @@ def notion_property_value(property_type, value):
         number = parse_number(value)
         return {"number": number} if number is not None else None
     if property_type == "select":
-        return {"select": {"name": text[:100]}} if text else None
+        name = compact_list(value)[0] if compact_list(value) else text
+        return {"select": {"name": name[:100]}} if name else None
     if property_type == "multi_select":
         return {"multi_select": [{"name": name[:100]} for name in compact_list(value)]}
     if property_type == "status":
-        return {"status": {"name": text[:100]}} if text else None
+        name = compact_list(value)[0] if compact_list(value) else text
+        return {"status": {"name": name[:100]}} if name else None
     if property_type == "url":
         return {"url": text} if text else None
     if property_type == "date":
@@ -475,6 +661,10 @@ def default_property_type(key):
         return "select"
     if key in {"secondary_sponsors", "committees", "keyword_groups"}:
         return "multi_select"
+    if key in {"subcategories", "policy_signal"}:
+        return "multi_select"
+    if key in {"primary_category", "impact_level", "urgency"}:
+        return "select"
     if key == "url":
         return "url"
     if key == "date_checked" or key.endswith("_date"):
