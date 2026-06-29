@@ -563,15 +563,19 @@ def push_to_notion(item):
         and child_data_source_ids
         and "database_id" in payload["parent"]
     ):
-        payload["parent"] = {"data_source_id": child_data_source_ids[0]}
-        r = SESSION.post(
-            NOTION_API,
-            headers=headers,
-            json=payload,
-            timeout=REQUEST_TIMEOUT,
-        )
-        if r.ok:
-            return
+        last_response = r
+        for data_source_id in child_data_source_ids:
+            payload["parent"] = {"data_source_id": data_source_id}
+            r = SESSION.post(
+                NOTION_API,
+                headers=headers,
+                json=payload,
+                timeout=REQUEST_TIMEOUT,
+            )
+            if r.ok:
+                return
+            last_response = r
+        r = last_response
 
     raise RuntimeError(f"Notion API error {r.status_code}: {r.text}")
 
