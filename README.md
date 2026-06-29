@@ -1,81 +1,95 @@
-**FIELDWAVE SF Policy Radar**
+# FIELDWAVE SF Policy Radar
 
-A lightweight legislative intelligence system that monitors San Francisco legislation for developments affecting arts, culture, creative economy, and cultural infrastructure.
+FIELDWAVE SF Policy Radar is a lightweight legislative intelligence tool for San Francisco arts, culture, creative economy, and cultural infrastructure policy.
 
-This project is intentionally designed as a policy intelligence tool rather than a legislative database. The goal is not simply to mirror public records, but to surface meaningful changes that merit human attention.
+The project is designed as a policy triage system, not a public-records mirror. It monitors Legistar records, detects culturally relevant signals, assigns priority, and can publish structured items into a Notion database for ongoing review.
 
-Rather than simply collecting legislative data, the project transforms Legistar records into an actionable policy dashboard that helps identify emerging opportunities, funding changes, governance issues, and legislation requiring attention.
+## Quick Demo
 
-⸻
+Run a credential-free preview:
 
-**Purpose**
+```bash
+python monitor_legistar.py --dry-run --years 10 --limit 5
+```
 
-FIELDWAVE SF Policy Radar was built to assist communities, organizations, policymakers, funders, and advocates identify important cultural infrastructure legislation proactively. 
+Example output:
 
-The system automatically reviews San Francisco legislative activity, applies arts- and culture-specific filtering, prioritizes items using policy rules, and publishes structured records into a Notion database for ongoing analysis.
+```text
+# FIELDWAVE SF Policy Radar Preview
 
-**Current Features**
+| Priority | File | Title | Status | Signals |
+| --- | --- | --- | --- | --- |
+| HIGH | 181080 | Ordinance amending the Administrative Code to establish the African American Arts and Cultural District... | Unfinished Business-Final Passage | arts_culture, cultural_infrastructure |
+```
 
-* Daily automated monitoring using GitHub Actions
-* Legistar API integration
-* Automatic export to Notion
-* Arts & culture keyword detection
-* Department-based triggers
-* Budget and funding detection
-* Priority scoring (High / Medium / Low)
-* Escalation logic
-* Sponsor tracking
-* Legislative status tracking
+For machine-readable output:
 
-**Keyword Categories**
+```bash
+python monitor_legistar.py --dry-run --json --years 10 --limit 5
+```
 
-* Arts & Culture
+The default monitor uses a three-year lookback. The ten-year option is useful for portfolio review because the public SF Legistar API currently returns recently modified historical records in this endpoint.
 
-* Artists & Practice
+## What It Does
 
-* Funding & Budget
+- Pulls San Francisco legislative records from the Legistar API
+- Sorts by recently modified records so updates surface first
+- Detects arts, culture, creative economy, funding, and cultural infrastructure signals
+- Applies department triggers for cultural policy bodies such as the Arts Commission, Fine Arts Museums, Grants for the Arts, and OEWD
+- Assigns priority levels for policy review
+- Supports a fast dry-run preview without Notion credentials
+- Exports enriched records to Notion when credentials are configured
+- Retries transient API failures so a temporary remote disconnect does not fail the whole run
 
-⸻
-**Department Triggers**
+## Why It Matters
 
-Additional review is triggered when legislation involves organizations such as:
+Arts and cultural policy often appears inside broader budget, land use, economic development, and governance items. FIELDWAVE helps surface those items early enough for staff, advocates, funders, and community partners to decide whether action is needed.
 
-* San Francisco Arts Commission
-* Office of Economic and Workforce Development
-* Fine Arts Museums of San Francisco
-* Grants for the Arts
+For a policy director workflow, the tool supports:
 
-⸻
+- Agenda scanning before committee meetings
+- Early identification of funding or district-impact items
+- A shared review queue for staff or coalition partners
+- Lightweight institutional memory in Notion
+- Replicable monitoring logic for other cities or policy domains
 
-**Workflow**
+## Running the Monitor
 
-San Francisco Legistar API
-            │
-            ▼
-    Python Monitoring Script
-            │
-            ▼
-Keyword + Department Analysis
-            │
-            ▼
- Priority Assignment
-            │
-            ▼
-     Notion Database
-            │
-            ▼
-FIELDWAVE SF Policy Radar
+Install the only runtime dependency:
 
-**Technology**
+```bash
+pip install requests
+```
 
-* Python 3
-* GitHub Actions
-* GitHub Secrets
-* Notion API
-* Legistar API
+Preview matches without exporting:
 
-**Long-Term Vision**
+```bash
+python monitor_legistar.py --dry-run
+```
 
-FIELDWAVE Policy Radar is intended to become a scalable, replicable legislative intelligence framework for arts and cultural policy.
+Export to Notion:
 
-While the current implementation focuses on San Francisco, the architecture is designed to expand to additional cities and states, supporting policy monitoring across the broader cultural sector.
+```bash
+export NOTION_TOKEN="secret_..."
+export NOTION_DATABASE_ID="..."
+python monitor_legistar.py
+```
+
+Optional flags:
+
+- `--dry-run`: print matches without creating Notion pages
+- `--json`: print dry-run results as JSON
+- `--limit 5`: stop after collecting a number of matching items
+- `--years 10`: adjust the freshness window
+- `--include-details`: fetch slower sponsor and history details during dry runs
+
+## Automation
+
+The included GitHub Actions workflow runs the monitor daily and can also be triggered manually. Notion credentials should be stored as repository secrets:
+
+- `NOTION_TOKEN`
+- `NOTION_DATABASE_ID`
+
+## Current Scope
+
+This version focuses on San Francisco. The same pattern can be extended to additional jurisdictions by swapping the Legistar base URL and tuning the policy signal dictionary.
