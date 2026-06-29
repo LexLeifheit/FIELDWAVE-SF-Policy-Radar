@@ -2,7 +2,7 @@
 
 FIELDWAVE SF Policy Radar is a lightweight legislative intelligence tool for San Francisco arts, culture, creative economy, and cultural infrastructure policy.
 
-The project is designed as a policy triage system, not a public-records mirror. It monitors Legistar records, detects culturally relevant signals, assigns priority, and can publish structured items into a Notion database for ongoing review.
+The project is designed as a policy triage system, not a public-records mirror. It monitors current public Legistar agendas, detects culturally relevant signals, assigns priority, and can publish structured items into a Notion database for ongoing review.
 
 ## Quick Demo
 
@@ -19,7 +19,7 @@ Example output:
 
 | Priority | File | Title | Status | Signals |
 | --- | --- | --- | --- | --- |
-| HIGH | 181080 | Ordinance amending the Administrative Code to establish the African American Arts and Cultural District... | Unfinished Business-Final Passage | arts_culture, cultural_infrastructure |
+| HIGH | 260741 | Resolution designating the San Francisco Arts Commission as the City and County of San Francisco's agency serving as the state-local partner... | For Immediate Adoption | arts_culture, arts commission |
 ```
 
 For machine-readable output:
@@ -28,12 +28,12 @@ For machine-readable output:
 python monitor_legistar.py --dry-run --json --years 10 --limit 5
 ```
 
-The default monitor uses a three-year lookback. The ten-year option is useful for portfolio review because the public SF Legistar API currently returns recently modified historical records in this endpoint.
+The default monitor scans current and recent public agendas. The older Legistar `/matters` API can still be used with `--source api`, but it is not the default because the SF endpoint does not reliably expose the newest legislative activity.
 
 ## What It Does
 
-- Pulls San Francisco legislative records from the Legistar API
-- Sorts by recently modified records so updates surface first
+- Pulls current San Francisco meeting agendas from the public Legistar site
+- Uses agenda dates so recently scheduled, adopted, or pending items surface first
 - Detects arts, culture, creative economy, funding, and cultural infrastructure signals
 - Applies department triggers for cultural policy bodies such as the Arts Commission, Fine Arts Museums, Grants for the Arts, and OEWD
 - Assigns priority levels for policy review
@@ -55,10 +55,10 @@ For a policy director workflow, the tool supports:
 
 ## Running the Monitor
 
-Install the only runtime dependency:
+Install runtime dependencies:
 
 ```bash
-pip install requests
+pip install requests beautifulsoup4
 ```
 
 Preview matches without exporting:
@@ -82,6 +82,14 @@ Optional flags:
 - `--limit 5`: stop after collecting a number of matching items
 - `--years 10`: adjust the freshness window
 - `--include-details`: fetch slower sponsor and history details during dry runs
+- `--source agenda`: scan public agendas, the default and recommended source
+- `--source api`: use the older Legistar `/matters` endpoint for diagnostics or historical demos
+- `--source auto`: use agendas first, then fall back to the API if no agenda matches are found
+- `--agenda-days 14`: change how many days of recent agendas to scan
+
+## Data Source Note
+
+San Francisco's public Legistar `/matters` API endpoint may lag or omit current legislative activity. For example, current agendas in the browser UI can show 2026 files while `/v1/sfgov/matters` returns older matter IDs and no 2026 `MatterIntroDate` records. FIELDWAVE therefore treats public meeting agendas as the operational source of truth for recent policy monitoring.
 
 ## Automation
 
