@@ -23,6 +23,7 @@ LEGISTAR_BASE = "https://webapi.legistar.com/v1/sfgov"
 LEGISTAR_SITE = "https://sfgov.legistar.com"
 
 NOTION_API = "https://api.notion.com/v1/pages"
+NOTION_VERSION = "2025-09-03"
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
@@ -450,7 +451,7 @@ def push_to_notion(item):
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
         "Content-Type": "application/json",
-        "Notion-Version": "2022-06-28"
+        "Notion-Version": NOTION_VERSION
     }
 
     # Base properties (always safe)
